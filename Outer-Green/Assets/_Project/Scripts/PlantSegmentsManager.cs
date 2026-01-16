@@ -1,16 +1,22 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PlantSegmentsManager : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    // Stores active input points gathered from PlantSegment instances
+    public List<Vector2> activeInputPoints = new List<Vector2>();
+
     void Start()
     {
-        
     }
 
-    // Update is called once per frame
     void Update()
     {
-        
+    }
+
+    // Clears the active input points list
+    public void ClearActiveInputPoints()
+    {
+        activeInputPoints.Clear();
     }
 }
