@@ -13,10 +13,12 @@ The game centers on developing resilient plant species that can support each oth
 ### 🧬 Procedural Plant Generation
 Plants are built from randomly generated segments with attachment points. Each segment can connect to others based on available attachment points, creating unique plant structures. Growth boundaries are enforced by invisible limits that deactivate attachment points outside the allowed area
 
-### 🌬️ Real-Time Growth Manipulation
-- Apply directional wind to influence growth patterns
-- Remove or reduce lighting to slow/pause growth, buying time to gather necessary components
-- Apply solutions and extracts (harvested from other plants) to mutate existing and future segments, affecting lifecycle duration, yield, and cosmetic appearance
+### 🌬️ Growth Manipulation
+- In-Growth Modifiers:
+    - Apply directional wind to influence growth patterns
+    - Remove or reduce lighting to slow/pause growth, buying time to gather necessary components
+- Before-Growth Modifiers:
+    - Apply solutions and extracts (harvested from other plants) to mutate existing and future segments, affecting lifecycle duration, yield, and cosmetic appearance
 
 ### 📦 Trading
 Limited material exchange between stations. Shipping costs scale with cargo weight, making seed trading more economical than shipping mature plants or heavy materials. Primary income comes from quests rather than trade
@@ -39,7 +41,7 @@ Dungeon-like planetary exploration using the player's robot. Robot equip grown p
 - Procedural plant generation with segment-based architecture
 - Dynamic attachment point system with boundary constraints
 - Real-time growth simulation with environmental factors
-- Mutation and breeding genetics system
+- Mutation genetics system with traits (laws)
 
 ## 📁 Project Structure
 
@@ -64,10 +66,22 @@ Assets/
 - Basic Unity project setup
 - 2.5D View
 - "Billboarding" Sprites
+- **Procedural plant growth system**
+  - Segment-based architecture with attachment points
+  - Two-phase growth cycle: Logic → Visuals
+  - Intelligent collision detection
+  - A lots of controllable random variation
+  - Global direction influence
+  
+- **Time management system**
+  - Cycle-based simulation with persistence
+  - Absence simulation (growth while offline) (probably won't last for long, meh)
+  - Configurable growth rates
 
 ### 🟨 Coming Soon
-- Plants growing
-- Plants mutating
+- Growth boundaries
+- Plants special traits (laws)
+- Plants mutation
 - Market trading
 - Space station environment
 - Quest system
