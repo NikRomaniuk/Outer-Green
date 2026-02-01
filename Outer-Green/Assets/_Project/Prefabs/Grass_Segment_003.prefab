@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8756504700547596406}
   - component: {fileID: 5322633731409955647}
   m_Layer: 0
-  m_Name: Grass_Segment_001
+  m_Name: Grass_Segment_003
   m_TagString: Untagged
   m_Icon: {fileID: 4422084297763085224, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 2818343709547965157}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.09, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -81,10 +81,14 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: -0.021508515, y: -0.031945445}
-      - {x: -0.07412646, y: 0.12636718}
-      - {x: -0.020772187, y: 0.14110772}
-      - {x: 0.03660026, y: -0.010573164}
+    - - {x: -0.021768894, y: -0.020682314}
+      - {x: -0.021460254, y: 0.019049771}
+      - {x: 0.049421735, y: 0.045017883}
+      - {x: 0.07180451, y: 0.13116314}
+      - {x: 0.11214913, y: 0.13144836}
+      - {x: 0.10988903, y: 0.06384591}
+      - {x: 0.07435874, y: -0.010293135}
+      - {x: 0.030397724, y: -0.021138556}
   m_UseDelaunayMesh: 1
 --- !u!114 &5322633731409955647
 MonoBehaviour:
@@ -101,7 +105,7 @@ MonoBehaviour:
   plantManager: {fileID: 0}
   segmentCollider: {fileID: 8756504700547596406}
   previousSegment: {fileID: 0}
-  growthVector: {x: -0.42, y: 1}
+  growthVector: {x: 0.9, y: 1}
   canBeFlipped: 1
   segmentSlots:
   - {fileID: 998882535229804436}
@@ -119,7 +123,7 @@ GameObject:
   - component: {fileID: 938376499268527224}
   - component: {fileID: 998882535229804436}
   m_Layer: 0
-  m_Name: SegmentSlot
+  m_Name: SegmentSlot01
   m_TagString: Untagged
   m_Icon: {fileID: 3443629218296621865, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
@@ -134,7 +138,7 @@ Transform:
   m_GameObject: {fileID: 3080155109509059579}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.04, y: 0.11000002, z: 0}
+  m_LocalPosition: {x: 0.09, y: 0.11, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -154,15 +158,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SegmentSlot
   slotType: 0
   state: 0
-  direction: {x: -0.42, y: 1}
+  direction: {x: 0, y: 1}
   maxRandomAngle: 30
   globalDirectionWeight: 0.3
   maxGlobalDeviationAngle: 120
   parentSegment: {fileID: 5322633731409955647}
   sourcePool:
-  - {fileID: 5322633731409955647}
+  - {fileID: 5322633731409955647, guid: 74bd0c50761ba1d4c8bb1ad845d311fd, type: 3}
   - {fileID: 5322633731409955647, guid: 45f453d65d3388141b7243d3e519a48b, type: 3}
-  - {fileID: 5322633731409955647, guid: 38aa916b6f3a8d04aa2cdeea4d6ceb92, type: 3}
+  - {fileID: 5322633731409955647}
   segmentCollider: {fileID: 8756504700547596406}
   maxRotationAttempts: 10
   collisionLayerMask:
@@ -194,7 +198,7 @@ Transform:
   m_GameObject: {fileID: 5598214076382891514}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.02, y: 0.06, z: 0}
+  m_LocalPosition: {x: 0.045, y: 0.055, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -250,7 +254,7 @@ SpriteRenderer:
   m_SortingLayer: 2
   m_SortingOrder: 10
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -313115341, guid: a776313a98bff284b8d4d03846834938, type: 3}
+  m_Sprite: {fileID: -1328298943, guid: a776313a98bff284b8d4d03846834938, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -342,7 +346,7 @@ SpriteRenderer:
   m_SortingLayer: 1
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -313115341, guid: a776313a98bff284b8d4d03846834938, type: 3}
+  m_Sprite: {fileID: -1328298943, guid: a776313a98bff284b8d4d03846834938, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

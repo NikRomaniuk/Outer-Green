@@ -1063,6 +1063,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TimeManager
   cycleDuration: 2
   resetOnStart: 1
+  pauseOnStart: 1
+  startupPauseDuration: 3
 --- !u!1 &585531950
 GameObject:
   m_ObjectHideFlags: 0
@@ -2513,7 +2515,7 @@ MonoBehaviour:
   testSegmentSlot: {fileID: 1857240141}
   segmentsManager: {fileID: 1226753584}
   direction: {x: 0, y: 1}
-  cyclesPerGrowth: 4
+  cyclesPerGrowth: 2
   maxRandomAngle: 15
   yOffset: 0.4
   topBound: 10

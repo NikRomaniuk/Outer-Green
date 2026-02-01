@@ -182,6 +182,9 @@ public class PlantManager : MonoBehaviour
             }
         }
         Debug.Log($"[PlantManager] Total spawn attempts: {spawnAttempts}");
+        
+        // Check and kill slots outside growth zone
+        CheckAndKillOutOfBoundsSlots();
     }
 
     /// <summary>
@@ -216,6 +219,43 @@ public class PlantManager : MonoBehaviour
 
         // Clear the list after all segments are finalized
         nonFinished.Clear();
+    }
+
+    /// <summary>
+    /// Check all active slots and kill those outside the growth zone
+    /// </summary>
+    private void CheckAndKillOutOfBoundsSlots()
+    {
+        if (segmentsManager == null) return;
+
+        var activeSlots = segmentsManager.GetActiveMainSlots();
+        if (activeSlots.Count == 0) return;
+
+        // Iterate over a copy to avoid modifying the collection while enumerating
+        var slotsCopy = new System.Collections.Generic.List<SegmentSlot>(activeSlots);
+
+        int killedCount = 0;
+        foreach (var slot in slotsCopy)
+        {
+            if (slot == null || slot.State != SlotState.Alive) continue;
+
+            // Convert slot world position to local position relative to PlantManager
+            Vector3 localPos = transform.InverseTransformPoint(slot.transform.position);
+            Vector2 localPos2D = new Vector2(localPos.x, localPos.y);
+
+            // Check if position is inside growth zone
+            if (!growthZone.Contains(localPos2D))
+            {
+                slot.Kill();
+                killedCount++;
+                Debug.Log($"[PlantManager] Killed slot {slot.gameObject.name} - outside growth zone at local position {localPos2D}");
+            }
+        }
+
+        if (killedCount > 0)
+        {
+            Debug.Log($"[PlantManager] Killed {killedCount} slots outside growth zone");
+        }
     }
 
     // ═════════════════════════════════════════════════════════════════════════════════════════════════

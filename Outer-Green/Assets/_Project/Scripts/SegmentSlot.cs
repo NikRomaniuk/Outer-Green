@@ -68,6 +68,10 @@ public class SegmentSlot : MonoBehaviour
     [SerializeField, Range(0f, 1f)]
     private float globalDirectionWeight = 0.3f;
 
+    [Tooltip("Maximum allowed angle (degrees) between the slot's final direction and the plant's global growth direction")]
+    [SerializeField, Range(0f, 180f)]
+    private float maxGlobalDeviationAngle = 120f;
+
     // -=-=- Segment Spawning -=-=-
     [Header("Segment Spawning")]
     [Tooltip("Reference to the parent segment manager")]
@@ -180,13 +184,22 @@ public class SegmentSlot : MonoBehaviour
     /// </summary>
     /// <param name="globalGrowthDirection">Plant's global growth direction (world space)</param>
     /// <param name="segmentPrefab">The segment prefab being spawned</param>
+    /// <param name="isFlipped">Whether the segment will be flipped 180° on Y-axis</param>
     /// <returns>Target direction in world space for the segment to grow along</returns>
-    public Vector2 GetFinalDirection(Vector2 globalGrowthDirection, PlantSegmentManager segmentPrefab)
+    public Vector2 GetFinalDirection(Vector2 globalGrowthDirection, PlantSegmentManager segmentPrefab, bool isFlipped)
     {
         // Step 1: Get base vector - slot's local direction transformed to world space
         Vector2 localDir = direction.normalized;
         Vector3 worldDir3D = transform.TransformDirection(new Vector3(localDir.x, localDir.y, 0f));
         Vector2 worldDir = new Vector2(worldDir3D.x, worldDir3D.y).normalized;
+
+        // Step 1.5: If segment will be flipped, invert the X component of growth vector
+        // (flip on Y-axis mirrors X but keeps Y the same)
+        Vector2 segmentLocalGrowth = segmentPrefab.GrowthVector.normalized;
+        if (isFlipped)
+        {
+            segmentLocalGrowth.x = -segmentLocalGrowth.x;
+        }
 
         // Step 2: Apply random deviation
         float randomAngle = Random.Range(-maxRandomAngle, maxRandomAngle);
@@ -256,7 +269,7 @@ public class SegmentSlot : MonoBehaviour
         if (sourcePool == null || sourcePool.Length == 0)
         {
             Debug.LogWarning($"[SegmentSlot] Source pool is empty on {gameObject.name}");
-            state = SlotState.Dead;
+            Kill();
             return false;
         }
         
@@ -278,15 +291,31 @@ public class SegmentSlot : MonoBehaviour
             int prefabIndex = Random.Range(0, tempPool.Count);
             PlantSegmentManager prefab = tempPool[prefabIndex];
 
+            // Decide if this prefab will be flipped (before rotation attempts)
+            bool isFlipped = prefab.CanBeFlipped && Random.value > 0.5f;
+
             // Try multiple rotation variants
             for (int rotationAttempt = 0; rotationAttempt < maxRotationAttempts; rotationAttempt++)
             {
                 // Get target direction in world space (steps 1-3 of algorithm)
-                Vector2 targetDirection = GetFinalDirection(globalGrowthDirection, prefab);
-                
+                Vector2 targetDirection = GetFinalDirection(globalGrowthDirection, prefab, isFlipped);
+
+                // Reject attempts where final direction deviates too far from the plant global direction
+                Vector2 globalNorm = globalGrowthDirection.sqrMagnitude < 0.0001f ? targetDirection : globalGrowthDirection.normalized;
+                float angleToGlobal = Vector2.Angle(targetDirection, globalNorm);
+                if (angleToGlobal > maxGlobalDeviationAngle)
+                {
+                    Debug.Log($"[SegmentSlot] {gameObject.name} spawn attempt rejected: angle to global {angleToGlobal:F1}° exceeds max {maxGlobalDeviationAngle}°");
+                    continue; // try next rotation attempt
+                }
+
                 // Step 4: Calculate rotation so segment's growthVector aligns with target direction
-                // Get segment's local growth vector
+                // Get segment's local growth vector (accounting for flip)
                 Vector2 segmentLocalGrowth = prefab.GrowthVector.normalized;
+                if (isFlipped)
+                {
+                    segmentLocalGrowth.x = -segmentLocalGrowth.x;
+                }
                 
                 // Calculate angle needed to rotate segment's local growth vector to target direction
                 float segmentLocalAngle = Mathf.Atan2(segmentLocalGrowth.y, segmentLocalGrowth.x) * Mathf.Rad2Deg - 90f;
@@ -296,12 +325,12 @@ public class SegmentSlot : MonoBehaviour
                 Quaternion rotation = Quaternion.Euler(0f, 0f, finalRotationAngle);
 
                 // Check if this configuration is valid (no collisions)
-                if (CheckSpawnValidity(prefab, transform.position, rotation))
+                if (CheckSpawnValidity(prefab, transform.position, rotation, isFlipped))
                 {
-                    Debug.Log($"[SegmentSlot] {gameObject.name} found valid spawn configuration, spawning {prefab.name}");
+                    Debug.Log($"[SegmentSlot] {gameObject.name} found valid spawn configuration, spawning {prefab.name}" + (isFlipped ? " (flipped)" : ""));
                     // Spawn the segment
-                    spawnedSegment = SpawnSegment(prefab, transform.position, rotation, isCatchUp);
-                    state = SlotState.Dead;
+                    spawnedSegment = SpawnSegment(prefab, transform.position, rotation, isCatchUp, isFlipped);
+                    Kill();
                     return true;
                 }
             }
@@ -313,7 +342,7 @@ public class SegmentSlot : MonoBehaviour
 
         // All prefabs exhausted without valid spawn
         Debug.LogWarning($"[SegmentSlot] {gameObject.name} exhausted all prefabs without finding valid spawn");
-        state = SlotState.Dead;
+        Kill();
         return false;
     }
 
@@ -326,7 +355,8 @@ public class SegmentSlot : MonoBehaviour
     /// Creates temporary GameObject hierarchy with PolygonCollider2D to test exact overlap
     /// Accounts for collider's local transform relative to prefab root (pivot point)
     /// </summary>
-    private bool CheckSpawnValidity(PlantSegmentManager prefab, Vector3 position, Quaternion rotation)
+    /// <param name="isFlipped">Whether the segment will be flipped 180° on Y-axis</param>
+    private bool CheckSpawnValidity(PlantSegmentManager prefab, Vector3 position, Quaternion rotation, bool isFlipped)
     {
         if (prefab == null) return false;
 
@@ -342,6 +372,12 @@ public class SegmentSlot : MonoBehaviour
         GameObject tempRoot = new GameObject("TempCollisionCheckRoot");
         tempRoot.transform.position = position;
         tempRoot.transform.rotation = rotation;
+        
+        // Apply flip if needed (180° rotation on Y-axis)
+        if (isFlipped)
+        {
+            tempRoot.transform.Rotate(0f, 180f, 0f, Space.Self);
+        }
 
         // Create child object to hold the collider at the same relative transform as in the prefab
         GameObject tempColliderGO = new GameObject("TempCollider");
@@ -419,7 +455,8 @@ public class SegmentSlot : MonoBehaviour
     /// <summary>
     /// Instantiate the segment at the slot position with proper hierarchy
     /// </summary>
-    private PlantSegmentManager SpawnSegment(PlantSegmentManager prefab, Vector3 position, Quaternion rotation, bool isCatchUp)
+    /// <param name="isFlipped">Whether to flip the segment 180° on Y-axis</param>
+    private PlantSegmentManager SpawnSegment(PlantSegmentManager prefab, Vector3 position, Quaternion rotation, bool isCatchUp, bool isFlipped)
     {
         // Determine parent transform - same level as parentSegment
         Transform newParent = null;
@@ -454,6 +491,12 @@ public class SegmentSlot : MonoBehaviour
         PlantSegmentManager newSegment = Instantiate(prefab, newParent);
         newSegment.transform.localPosition = localPosition;
         newSegment.transform.localRotation = localRotation;
+        
+        // Apply flip if needed (180° rotation on Y-axis in local space)
+        if (isFlipped)
+        {
+            newSegment.transform.Rotate(0f, 180f, 0f, Space.Self);
+        }
         
         // Make sure it's not finalized yet
         newSegment.isFinalized = false; // Reset finalization flag
@@ -511,6 +554,7 @@ public class SegmentSlot : MonoBehaviour
     public void Kill()
     {
         state = SlotState.Dead;
+        parentSegment.plantManager?.GetComponent<PlantSegmentsManager>()?.UnregisterActiveSlot(this);
     }
 
     /// <summary>

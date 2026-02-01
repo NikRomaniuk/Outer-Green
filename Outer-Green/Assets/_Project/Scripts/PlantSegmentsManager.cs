@@ -37,6 +37,7 @@ public class PlantSegmentsManager : MonoBehaviour
     [SerializeField] private List<PlantSegmentManager> initialSegments = new List<PlantSegmentManager>();
 
     // -=-=- Runtime Data -=-=-
+    private List<SegmentSlot> slots = new List<SegmentSlot>();
     // Active slots available for spawning
     private List<SegmentSlot> activeMainSlots = new List<SegmentSlot>();
     private List<SegmentSlot> activeExtraSlots = new List<SegmentSlot>();
@@ -97,6 +98,11 @@ public class PlantSegmentsManager : MonoBehaviour
     {
         if (slot == null) return;
 
+        if (!slots.Contains(slot))
+        {
+            slots.Add(slot);
+        }
+
         if (slot.Slot == SlotType.Main && !activeMainSlots.Contains(slot))
         {
             activeMainSlots.Add(slot);
@@ -110,14 +116,14 @@ public class PlantSegmentsManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Unregister a slot (when it dies or spawns a segment)
+    /// Unregister a slot (when it dies)
     /// </summary>
-    public void UnregisterSlot(SegmentSlot slot)
+    public void UnregisterActiveSlot(SegmentSlot slot)
     {
         if (slot == null) return;
 
-        activeMainSlots.Remove(slot);
-        activeExtraSlots.Remove(slot);
+        if (activeMainSlots.Contains(slot)) activeMainSlots.Remove(slot);
+        if (activeExtraSlots.Contains(slot)) activeExtraSlots.Remove(slot);
     }
 
     // ═════════════════════════════════════════════════════════════════════════════════════════════════

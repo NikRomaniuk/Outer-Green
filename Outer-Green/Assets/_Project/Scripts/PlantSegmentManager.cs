@@ -38,6 +38,11 @@ public class PlantSegmentManager : MonoBehaviour
     private Vector2 growthVector = Vector2.up;
     public Vector2 GrowthVector => growthVector;
 
+    [Tooltip("Allow this segment to be flipped 180° on Y-axis when spawned")]
+    [SerializeField]
+    private bool canBeFlipped = false;
+    public bool CanBeFlipped => canBeFlipped;
+
     [Header("Slots")]
     [SerializeField]
     private List<SegmentSlot> segmentSlots = new List<SegmentSlot>();
