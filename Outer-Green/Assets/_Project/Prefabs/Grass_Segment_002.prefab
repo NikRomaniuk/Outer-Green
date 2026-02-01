@@ -48,7 +48,7 @@ MonoBehaviour:
   state: 0
   direction: {x: 0.9, y: 0.5}
   maxRandomAngle: 30
-  globalDirectionWeight: 1
+  globalDirectionWeight: 0.3
   parentSegment: {fileID: 5322633731409955647}
   sourcePool:
   - {fileID: 5322633731409955647, guid: 74bd0c50761ba1d4c8bb1ad845d311fd, type: 3}
@@ -220,7 +220,7 @@ MonoBehaviour:
   state: 0
   direction: {x: -1.7, y: 1}
   maxRandomAngle: 30
-  globalDirectionWeight: 1
+  globalDirectionWeight: 0.3
   parentSegment: {fileID: 5322633731409955647}
   sourcePool:
   - {fileID: 5322633731409955647, guid: 74bd0c50761ba1d4c8bb1ad845d311fd, type: 3}

@@ -101,7 +101,7 @@ MonoBehaviour:
   plantManager: {fileID: 0}
   segmentCollider: {fileID: 8756504700547596406}
   previousSegment: {fileID: 0}
-  growthVector: {x: -0.4, y: 1}
+  growthVector: {x: -0.42, y: 1}
   segmentSlots:
   - {fileID: 998882535229804436}
   spriteRenderer: {fileID: 6559016879503725214}
@@ -155,7 +155,7 @@ MonoBehaviour:
   state: 0
   direction: {x: -0.42, y: 1}
   maxRandomAngle: 30
-  globalDirectionWeight: 1
+  globalDirectionWeight: 0.3
   parentSegment: {fileID: 5322633731409955647}
   sourcePool:
   - {fileID: 5322633731409955647}

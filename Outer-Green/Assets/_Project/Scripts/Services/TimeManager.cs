@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using UnityEngine.SceneManagement;
 
 // ═════════════════════════════════════════════════════════════════════════════════════════════════
 // TIME MANAGER - Event-Driven Cycle System
@@ -13,11 +14,10 @@ using System;
 // 4. Cycle repeats
 //
 // PERSISTENCE:
-// - Saves total cycles and last cycle time to PlayerPrefs
-// - On startup, calculates missed cycles during absence and simulates them
+// - Saves total cycles to PlayerPrefs
 //
 // EVENTS:
-// - OnCyclesPassed(long count): Fired when cycles complete, carries cycle count for logic processing
+// - OnCyclesPassed(): Fired when cycles complete, used for logic processing
 // - OnCyclesCompleted(): Fired after OnCyclesPassed, used for visual updates and finalization
 // ═════════════════════════════════════════════════════════════════════════════════════════════════
 
@@ -32,24 +32,24 @@ public class TimeManager : MonoBehaviour
     [Header("Debug Options")]
     [Tooltip("Reset all saved cycles and time data on start")]
     [SerializeField] private bool resetOnStart = false;
-    
-    [Tooltip("Manually add cycles on start (for testing)")]
-    [SerializeField] private long addCyclesOnStart = 0;
-    
-    [Tooltip("Disable absence simulation")]
-    [SerializeField] private bool disableAbsenceSimulation = false;
 
     // -=-=- State -=-=-
     private float _timer;
     public long CyclesTotal { get; private set; }
     private bool _firstCycle = true;
     
+    [Header("Startup")]
+    [Tooltip("Pause cycle timer on scene load for this many seconds before starting")]
+    [SerializeField] private bool pauseOnStart = true;
+    [SerializeField, Min(0f)] private float startupPauseDuration = 3f;
+    private float _startupPauseTimer = 0f;
+    private bool _isStartupPaused = false;
+    
     // -=-=- Events -=-=-
-    public static event Action<long> OnCyclesPassed;    // Logic processing (growth calculations)
+    public static event Action OnCyclesPassed;          // Logic processing (growth calculations)
     public static event Action OnCyclesCompleted;       // Visual finalization (spawn visuals)
 
     // -=-=- Persistence Keys -=-=-
-    private const string LAST_CYCLE_TIME_KEY = "TimeManager_LastCycleTime";
     private const string CYCLES_TOTAL_KEY = "TimeManager_CyclesTotal";
 
     // ═════════════════════════════════════════════════════════════════════════════════════════════════
@@ -73,7 +73,6 @@ public class TimeManager : MonoBehaviour
         if (resetOnStart)
         {
             Debug.LogWarning("[TimeManager] Resetting all saved cycle data!");
-            PlayerPrefs.DeleteKey(LAST_CYCLE_TIME_KEY);
             PlayerPrefs.DeleteKey(CYCLES_TOTAL_KEY);
             PlayerPrefs.Save();
             CyclesTotal = 0;
@@ -93,26 +92,32 @@ public class TimeManager : MonoBehaviour
         {
             Debug.Log("[TimeManager] No saved cycles found, starting fresh");
         }
-
-        // Calculate absence simulation
-        if (!disableAbsenceSimulation)
-        {
-            SimulateAbsence();
-        }
-        else
-        {
-            Debug.Log("[TimeManager] Absence simulation disabled");
-            SaveTimeData();
-        }
         
-        // Add manual cycles if requested
-        if (addCyclesOnStart > 0)
+        // Configure startup pause
+        _isStartupPaused = pauseOnStart;
+        _startupPauseTimer = startupPauseDuration;
+        if (_isStartupPaused)
         {
-            Debug.Log($"[TimeManager] Adding {addCyclesOnStart} manual cycles on start");
-            CyclesTotal += addCyclesOnStart;
-            SaveTimeData();
-            OnCyclesPassed?.Invoke(addCyclesOnStart);
+            Debug.Log($"[TimeManager] Startup pause enabled: duration {_startupPauseTimer} seconds");
         }
+
+        // Subscribe to scene loaded to reapply startup pause on scene changes
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    // Unsubscribe from sceneLoaded when destroyed
+    private void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    // Handle scene loaded and reapply startup pause if configured
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (!pauseOnStart) return;
+        _isStartupPaused = true;
+        _startupPauseTimer = startupPauseDuration;
+        Debug.Log($"[TimeManager] Scene loaded ({scene.name}), startup pause reapplied: {_startupPauseTimer} seconds");
     }
 
     // ═════════════════════════════════════════════════════════════════════════════════════════════════
@@ -121,6 +126,26 @@ public class TimeManager : MonoBehaviour
 
     private void Update()
     {
+        // If we are paused at startup, handle the pause and optionally wait for simulation to finish
+        if (_isStartupPaused)
+        {
+            if (_startupPauseTimer > 0f)
+            {
+                _startupPauseTimer -= Time.deltaTime;
+                return; // keep timer paused until initial duration elapses
+            }
+
+            // initial pause elapsed; only resume if no simulation is running
+            if (SimulationManager.IsSimulating)
+            {
+                // keep waiting until simulation finishes
+                return;
+            }
+
+            _isStartupPaused = false;
+            Debug.Log("[TimeManager] Startup pause ended; resuming cycle timer.");
+        }
+
         _timer += Time.deltaTime;
 
         if (_timer >= cycleDuration)
@@ -146,55 +171,7 @@ public class TimeManager : MonoBehaviour
             }
 
             // Notify subscribers that cycles have passed
-            OnCyclesPassed?.Invoke(cyclesCount);
-        }
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════════════════════════════
-    // ABSENCE SIMULATION
-    // ═════════════════════════════════════════════════════════════════════════════════════════════════
-    // Calculates missed cycles since last session and triggers catch-up growth
-
-    private void SimulateAbsence()
-    {
-        if (!PlayerPrefs.HasKey(LAST_CYCLE_TIME_KEY))
-        {
-            // First time running - save current time
-            Debug.Log("[TimeManager] First run, no absence simulation needed");
-            SaveTimeData();
-            return;
-        }
-
-        // Get last saved time
-        string lastTimeStr = PlayerPrefs.GetString(LAST_CYCLE_TIME_KEY);
-        if (!long.TryParse(lastTimeStr, out long lastTimeTicks))
-        {
-            SaveTimeData();
-            return;
-        }
-
-        // Calculate time difference
-        long currentTicks = DateTime.Now.Ticks;
-        long elapsedTicks = currentTicks - lastTimeTicks;
-        double elapsedSeconds = TimeSpan.FromTicks(elapsedTicks).TotalSeconds;
-
-        // Convert to cycles
-        long missedCycles = (long)(elapsedSeconds / cycleDuration);
-
-        if (missedCycles > 0)
-        {
-            CyclesTotal += missedCycles;
-            Debug.Log($"[TimeManager] Absence simulation: {missedCycles} cycles missed (elapsed: {elapsedSeconds:F1}s)");
-            SaveTimeData();
-
-            // Notify subscribers about missed cycles
-            OnCyclesPassed?.Invoke(missedCycles);
-        }
-        else
-        {
-            Debug.Log($"[TimeManager] No cycles missed (elapsed: {elapsedSeconds:F1}s)");
-            // Update time even if no cycles passed
-            SaveTimeData();
+            OnCyclesPassed?.Invoke();
         }
     }
 
@@ -204,7 +181,6 @@ public class TimeManager : MonoBehaviour
 
     private void SaveTimeData()
     {
-        PlayerPrefs.SetString(LAST_CYCLE_TIME_KEY, DateTime.Now.Ticks.ToString());
         PlayerPrefs.SetString(CYCLES_TOTAL_KEY, CyclesTotal.ToString());
         PlayerPrefs.Save();
     }

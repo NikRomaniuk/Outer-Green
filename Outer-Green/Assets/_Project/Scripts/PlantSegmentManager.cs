@@ -9,13 +9,12 @@ using UnityEngine;
 // PURPOSE:
 // - Holds references: plantManager, previousSegment, segmentCollider
 // - Contains child SegmentSlots that spawn next generation of segments
-// - Tracks finalization state for deferred slot registration
+// - Tracks finalization state
 //
 // FINALIZATION WORKFLOW:
 // 1. Segment is spawned by SegmentSlot and registered as "non-finished"
 // 2. At end of cycle, PlantManager calls FinalizeGrowth()
-// 3. FinalizeGrowth() registers all child slots with PlantSegmentsManager
-// 4. Registered slots become available for next growth cycle
+// 3. FinalizeGrowth() marks segment as finished
 //
 // This two-phase approach ensures slots don't spawn from incomplete segments
 // ═════════════════════════════════════════════════════════════════════════════════════════════════
@@ -59,16 +58,17 @@ public class PlantSegmentManager : MonoBehaviour
     // ═════════════════════════════════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Finalize growth by registering all child slots with PlantSegmentsManager
+    /// Finalize growth
     /// Called by PlantManager.FinishGrow() at the end of growth cycle
-
+    /// Slot registration is handled in SegmentSlot.SpawnSegment so this method only marks the segment finalized and enables visuals
+    /// </summary>
 
     void Update()
     {
     }
 
     /// <summary>
-    /// Finalize growth by registering slots
+    /// Finalize growth
     /// </summary>
     public void FinalizeGrowth()
     {
@@ -79,40 +79,11 @@ public class PlantSegmentManager : MonoBehaviour
         }
 
         Debug.Log($"[PlantSegmentManager] Finalizing growth for {gameObject.name}");
+        // Slot registration moved to SegmentSlot.SpawnSegment so slots are available immediately after spawn
+        // This method now only finalizes state and updates visuals
+        Debug.Log($"[PlantSegmentManager] Finalization completed for {gameObject.name}");
         isFinalized = true;
-
-        // Register all slots with the plant segments manager
-        if (plantManager != null)
-        {
-            PlantSegmentsManager segmentsManager = plantManager.GetComponent<PlantSegmentsManager>();
-            if (segmentsManager == null)
-            {
-                // Try to find in parent or scene
-                segmentsManager = plantManager.GetComponentInChildren<PlantSegmentsManager>();
-                if (segmentsManager == null)
-                {
-                    segmentsManager = FindFirstObjectByType<PlantSegmentsManager>();
-                }
-            }
-
-            if (segmentsManager != null)
-            {
-                int registeredCount = 0;
-                foreach (var slot in segmentSlots)
-                {
-                    if (slot != null && slot.State == SlotState.Alive)
-                    {
-                        segmentsManager.RegisterSlot(slot);
-                        registeredCount++;
-                    }
-                }
-                Debug.Log($"[PlantSegmentManager] {gameObject.name} registered {registeredCount} slots with PlantSegmentsManager");
-            }
-            else
-            {
-                Debug.LogWarning("[PlantSegmentManager] Could not find PlantSegmentsManager to register slots!");
-            }
-        }
+        UpdateVisuals(isFinalized); // Enable visuals upon finalization
     }
 
     // ═════════════════════════════════════════════════════════════════════════════════════════════════

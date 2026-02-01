@@ -24,7 +24,7 @@ public enum SlotState
 // 3. For each prefab, try maxRotationAttempts different rotations
 // 4. CheckSpawnValidity() creates temporary collider to test for overlaps
 // 5. If valid configuration found, SpawnSegment() instantiates the prefab
-// 6. New segment registers itself with PlantSegmentsManager (deferred finalization)
+// 6. New segment registers itself and its slots with PlantSegmentsManager (deferred finalization)
 // 7. Slot state changes to Dead
 //
 // COLLISION DETECTION:
@@ -455,8 +455,9 @@ public class SegmentSlot : MonoBehaviour
         newSegment.transform.localPosition = localPosition;
         newSegment.transform.localRotation = localRotation;
         
-        // Reset finalization flag (prefab might have isFinalized=true)
-        newSegment.isFinalized = false;
+        // Make sure it's not finalized yet
+        newSegment.isFinalized = false; // Reset finalization flag
+        newSegment.UpdateVisuals(false); // Hide visuals until finalized
         
         // Set reference to previous segment
         newSegment.previousSegment = parentSegment;
@@ -474,14 +475,26 @@ public class SegmentSlot : MonoBehaviour
             newSlots[i].SetParentSegment(newSegment);
         }
 
-        // Register the segment with PlantSegmentsManager for deferred finalization
-        // FinalizeGrowth will be called later by PlantManager.FinishGrow()
+        // Register the new segment its slots immediately
         if (newSegment.plantManager != null)
         {
             PlantSegmentsManager segmentsManager = newSegment.plantManager.GetComponent<PlantSegmentsManager>();
             if (segmentsManager != null)
             {
                 segmentsManager.RegisterSegment(newSegment);
+                // Register all slots from the new segment with the segments manager
+                IReadOnlyList<SegmentSlot> slotsToRegister = newSegment.SegmentSlots;
+                int registeredSlots = 0;
+                for (int s = 0; s < slotsToRegister.Count; s++)
+                {
+                    var slot = slotsToRegister[s];
+                    if (slot != null && slot.State == SlotState.Alive)
+                    {
+                        segmentsManager.RegisterSlot(slot);
+                        registeredSlots++;
+                    }
+                }
+                Debug.Log($"[SegmentSlot] Registered {registeredSlots} slots from {newSegment.gameObject.name} with PlantSegmentsManager");
             }
         }
 

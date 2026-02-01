@@ -28,7 +28,7 @@ public class PlantManager : MonoBehaviour
     [SerializeField] private PlantSegmentsManager segmentsManager;
 
     [Header("Growth Direction")]
-    [Tooltip("Global growth direction for the plant (e.g., towards light)")]
+    [Tooltip("Global growth direction for the plant")]
     [SerializeField] private Vector2 direction = Vector2.up;
     public Vector2 Direction => direction;
     
@@ -37,7 +37,7 @@ public class PlantManager : MonoBehaviour
     [SerializeField] private int cyclesPerGrowth = 2;
 
     // -=-=- State -=-=-
-    private long _cycleAccumulator = 0;
+    private long _lastCycleGrown = -1; // sentinel: not yet initialized to a cycle index
 
     [Tooltip("Maximum random angle deviation in degrees")]
     [SerializeField, Range(0f, 90f)] private float maxRandomAngle = 15f;
@@ -58,7 +58,7 @@ public class PlantManager : MonoBehaviour
     [SerializeField] private Color growthZoneColor = Color.red;
 
     // -=-=- Cached Data -=-=-
-    private Rect growthZone;
+    [HideInInspector] public Rect growthZone;
     private Rect boundsZone;
 
     // ═════════════════════════════════════════════════════════════════════════════════════════════════
@@ -94,26 +94,52 @@ public class PlantManager : MonoBehaviour
     // ═════════════════════════════════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Phase 1: Accumulate cycles and trigger growth iterations when threshold is reached
+    /// Phase 1: Use the absolute cycle index to decide how many growth iterations to run.
+    /// The parameter is treated as the current cycle index. `_lastCycleGrown` stores
+    /// the cycle index when the plant last performed growth (initialized to the
+    /// first received cycle to avoid retroactive growth).
     /// </summary>
-    private void HandleCycles(long cyclesCount)
+    private void HandleCycles()
     {
-        Debug.Log($"[PlantManager] Received {cyclesCount} cycles");
-        
-        _cycleAccumulator += cyclesCount;
+        long currentCycle = TimeManager.Instance.CyclesTotal;
 
-        // Determine if this is a catch-up simulation (large number of cycles at once)
-        bool isCatchUp = cyclesCount > 1;
+        Debug.Log($"[PlantManager] Received cycle index: {currentCycle}");
 
-        long growthIterations = _cycleAccumulator / cyclesPerGrowth;
-        _cycleAccumulator %= cyclesPerGrowth;
-        
-        Debug.Log($"[PlantManager] Growth iterations: {growthIterations}, isCatchUp: {isCatchUp}, remaining cycles: {_cycleAccumulator}");
+        // Initialize last grown to the current cycle on the first call
+        if (_lastCycleGrown < 0)
+        {
+            _lastCycleGrown = currentCycle;
+            Debug.Log($"[PlantManager] Initializing _lastCycleGrown to {currentCycle}");
+            return;
+        }
 
-        // Execute growth for each iteration
+        long deltaCycles = currentCycle - _lastCycleGrown;
+        long growthIterations = deltaCycles / cyclesPerGrowth;
+
+        bool isCatchUp = growthIterations > 1;
+
+        Debug.Log($"[PlantManager] deltaCycles: {deltaCycles}, growthIterations: {growthIterations}, isCatchUp: {isCatchUp}");
+
+        if (growthIterations <= 0) return;
+
+        if (isCatchUp)
+        {
+            SimulationManager.RegisterProcess();
+            Debug.Log($"[PlantManager] Started simulating {growthIterations} growth iterations");
+        }
+
         for (long i = 0; i < growthIterations; i++)
         {
             Grow(isCatchUp);
+        }
+
+        // advance last grown by the amount of cycles we consumed for growth
+        _lastCycleGrown += growthIterations * cyclesPerGrowth;
+
+        if (isCatchUp)
+        {
+            SimulationManager.UnregisterProcess();
+            Debug.Log($"[PlantManager] Finished simulating {growthIterations} growth iterations");
         }
     }
 

@@ -1063,8 +1063,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TimeManager
   cycleDuration: 2
   resetOnStart: 1
-  addCyclesOnStart: 0
-  disableAbsenceSimulation: 1
 --- !u!1 &585531950
 GameObject:
   m_ObjectHideFlags: 0
@@ -2492,7 +2490,7 @@ Transform:
   m_GameObject: {fileID: 1226753583}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0.38268346, z: -0, w: 0.92387956}
-  m_LocalPosition: {x: 1.09, y: 0.5, z: 12.900001}
+  m_LocalPosition: {x: -4, y: 0.5, z: 14}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2515,7 +2513,7 @@ MonoBehaviour:
   testSegmentSlot: {fileID: 1857240141}
   segmentsManager: {fileID: 1226753584}
   direction: {x: 0, y: 1}
-  cyclesPerGrowth: 2
+  cyclesPerGrowth: 4
   maxRandomAngle: 15
   yOffset: 0.4
   topBound: 10
@@ -2525,6 +2523,12 @@ MonoBehaviour:
   boundsColor: {r: 0, g: 0, b: 1, a: 1}
   drawGrowthZone: 1
   growthZoneColor: {r: 1, g: 0, b: 0, a: 1}
+  growthZone:
+    serializedVersion: 2
+    x: -5
+    y: 0.4
+    width: 10
+    height: 9.6
 --- !u!1 &1283344251
 GameObject:
   m_ObjectHideFlags: 0
@@ -3176,6 +3180,12 @@ MonoBehaviour:
   boundsColor: {r: 0, g: 0, b: 1, a: 1}
   drawGrowthZone: 1
   growthZoneColor: {r: 1, g: 0, b: 0, a: 1}
+  growthZone:
+    serializedVersion: 2
+    x: -4
+    y: 0.4
+    width: 8
+    height: 7.6
 --- !u!1001 &6309658555082598920
 PrefabInstance:
   m_ObjectHideFlags: 0
